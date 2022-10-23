@@ -1,0 +1,178 @@
+schema: '2.0'
+stages:
+  preprocess_train_data:
+    cmd: python src/data/make_dataset.py data/raw/train.csv --output_train_data_filepath
+      data/interim/train_data.pkl --output_train_target_filepath data/interim/train_target.pkl
+      --output_val_data_filepath data/interim/val_data.pkl --output_val_target_filepath
+      data/interim/val_target.pkl
+    deps:
+    - path: data/raw/train.csv
+      md5: 80ccab65fb115cbad143dbbd2bcd5577
+      size: 460676
+    - path: src/data/make_dataset.py
+      md5: bca98a859069becd04bb6f4ce76e60b0
+      size: 2573
+    - path: src/data/preprocess.py
+      md5: eb72012c130114a28bc9e535ec4ae4b9
+      size: 1499
+    outs:
+    - path: data/interim/train_data.pkl
+      md5: 8658f1854c78c988a8d312f05160b567
+      size: 289450
+    - path: data/interim/train_target.pkl
+      md5: 7eebbca859f994b3fe38bd5915c09f45
+      size: 24055
+    - path: data/interim/val_data.pkl
+      md5: a00a3e6cfb1d5ec7abee450540f49460
+      size: 70910
+    - path: data/interim/val_target.pkl
+      md5: 2ff1b106b25b942d1fe64aa45aa88f7a
+      size: 6535
+  train_feature_generation:
+    cmd: python src/features/build_features.py data/interim/train_data.pkl data/processed/train_data.pkl;
+      python src/features/build_features.py data/interim/val_data.pkl data/processed/val_data.pkl
+    deps:
+    - path: data/interim/train_data.pkl
+      md5: 8658f1854c78c988a8d312f05160b567
+      size: 289450
+    - path: data/interim/val_data.pkl
+      md5: a00a3e6cfb1d5ec7abee450540f49460
+      size: 70910
+    - path: src/features/build_features.py
+      md5: 64436cc6444db48f45f447cea2eb258a
+      size: 1326
+    - path: src/features/features.py
+      md5: 4d68d2aa04c6ab726217b95f2952ac18
+      size: 2209
+    outs:
+    - path: data/processed/train_data.pkl
+      md5: d90b332966473885d644e62fa03bb927
+      size: 295691
+    - path: data/processed/val_data.pkl
+      md5: ffd309b6dc84b5d30670f2f67a01e1f6
+      size: 72771
+  train_model:
+    cmd: python src/models/train_model.py data/processed/train_data.pkl data/interim/train_target.pkl
+      models/catboost.pkl models/HGBR.pkl
+    deps:
+    - path: data/interim/train_target.pkl
+      md5: 7eebbca859f994b3fe38bd5915c09f45
+      size: 24055
+    - path: data/processed/train_data.pkl
+      md5: d90b332966473885d644e62fa03bb927
+      size: 295691
+    - path: src/models/train.py
+      md5: b72b34788b06d048e7b452c252d72e49
+      size: 847
+    - path: src/models/train_model.py
+      md5: ed0c46f54da5503325d12ee2cc6477f8
+      size: 1596
+    outs:
+    - path: models/HGBR.pkl
+      md5: a8ae2666efa715f5492faf558c3ab4bf
+      size: 354449
+    - path: models/catboost.pkl
+      md5: 782da7d822044bb0ce5e4e441cd2513c
+      size: 135170
+  preprocess_test_data:
+    cmd: python src/data/make_dataset.py data/raw/test.csv --output_data_filepath
+      data/interim/test.pkl
+    deps:
+    - path: data/raw/test.csv
+      md5: dcec4b79bf9c7317bd9e17789bf888f0
+      size: 451405
+    - path: src/data/make_dataset.py
+      md5: bca98a859069becd04bb6f4ce76e60b0
+      size: 2573
+    - path: src/data/preprocess.py
+      md5: eb72012c130114a28bc9e535ec4ae4b9
+      size: 1499
+    outs:
+    - path: data/interim/test.pkl
+      md5: edd0aeeb1e0d152f4b71d5599575fe52
+      size: 364829
+  test_feature_generation:
+    cmd: python src/features/build_features.py data/interim/test.pkl data/processed/test.pkl
+    deps:
+    - path: data/interim/test.pkl
+      md5: edd0aeeb1e0d152f4b71d5599575fe52
+      size: 364829
+    - path: src/features/build_features.py
+      md5: 64436cc6444db48f45f447cea2eb258a
+      size: 1326
+    - path: src/features/features.py
+      md5: 4d68d2aa04c6ab726217b95f2952ac18
+      size: 2209
+    outs:
+    - path: data/processed/test.pkl
+      md5: 924d3d1d06f4ff3bea8404929b1dccad
+      size: 372493
+  predict_val_model:
+    cmd: python src/models/predict_model.py data/processed/val_data.pkl models/catboost.pkl
+      models/HGBR.pkl predictions/catboost_val_predict.pkl predictions/HGBR_val_predict.pkl
+    deps:
+    - path: data/processed/val_data.pkl
+      md5: ffd309b6dc84b5d30670f2f67a01e1f6
+      size: 72771
+    - path: models/HGBR.pkl
+      md5: a8ae2666efa715f5492faf558c3ab4bf
+      size: 354449
+    - path: models/catboost.pkl
+      md5: 782da7d822044bb0ce5e4e441cd2513c
+      size: 135170
+    - path: src/models/predict_model.py
+      md5: 852136be2017b1d67aa2ec0965826b6c
+      size: 1757
+    outs:
+    - path: predictions/HGBR_val_predict.pkl
+      md5: 727bcb72195fa2d2c4ca6b5685f465e0
+      size: 2487
+    - path: predictions/catboost_val_predict.pkl
+      md5: ef6ce6a41d27a3b216ff0ecbe7b61519
+      size: 2487
+  predict_test_model:
+    cmd: python src/models/predict_model.py data/processed/test.pkl models/catboost.pkl
+      models/HGBR.pkl predictions/catboost_test_predict.pkl predictions/HGBR_test_predict.pkl
+    deps:
+    - path: data/processed/test.pkl
+      md5: 924d3d1d06f4ff3bea8404929b1dccad
+      size: 372493
+    - path: models/HGBR.pkl
+      md5: a8ae2666efa715f5492faf558c3ab4bf
+      size: 354449
+    - path: models/catboost.pkl
+      md5: 782da7d822044bb0ce5e4e441cd2513c
+      size: 135170
+    - path: src/models/predict_model.py
+      md5: 852136be2017b1d67aa2ec0965826b6c
+      size: 1757
+    outs:
+    - path: predictions/HGBR_test_predict.pkl
+      md5: 77227e68bb1d2c25ac66b3df885b7afc
+      size: 11823
+    - path: predictions/catboost_test_predict.pkl
+      md5: dd1537f3ab3e132982f188efeba6e066
+      size: 11823
+  evaluate:
+    cmd: python src/models/evaluate.py predictions/catboost_val_predict.pkl predictions/HGBR_val_predict.pkl
+      data/interim/val_target.pkl reports/evaluate/catboost_metrics.json reports/evaluate/HGBR_metrics.json
+    deps:
+    - path: data/interim/val_target.pkl
+      md5: 2ff1b106b25b942d1fe64aa45aa88f7a
+      size: 6535
+    - path: predictions/HGBR_val_predict.pkl
+      md5: 727bcb72195fa2d2c4ca6b5685f465e0
+      size: 2487
+    - path: predictions/catboost_val_predict.pkl
+      md5: ef6ce6a41d27a3b216ff0ecbe7b61519
+      size: 2487
+    - path: src/models/evaluate.py
+      md5: 014232efb88e812eec9d4b288e46715d
+      size: 2204
+    outs:
+    - path: reports/evaluate/HGBR_metrics.json
+      md5: 51f5e5c85d9f0889629caacbd662f72e
+      size: 94
+    - path: reports/evaluate/catboost_metrics.json
+      md5: 70c42f169da26f85fcd175e077db16fa
+      size: 92

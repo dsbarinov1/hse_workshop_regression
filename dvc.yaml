@@ -1,0 +1,90 @@
+stages:
+  preprocess_train_data:
+    cmd: python src/data/make_dataset.py data/raw/train.csv --output_train_data_filepath
+      data/interim/train_data.pkl --output_train_target_filepath data/interim/train_target.pkl
+      --output_val_data_filepath data/interim/val_data.pkl --output_val_target_filepath
+      data/interim/val_target.pkl
+    deps:
+    - data/raw/train.csv
+    - src/data/make_dataset.py
+    - src/data/preprocess.py
+    outs:
+    - data/interim/train_data.pkl
+    - data/interim/train_target.pkl
+    - data/interim/val_data.pkl
+    - data/interim/val_target.pkl
+
+  train_feature_generation:
+    cmd: python src/features/build_features.py data/interim/train_data.pkl data/processed/train_data.pkl;
+      python src/features/build_features.py data/interim/val_data.pkl data/processed/val_data.pkl
+    deps:
+    - data/interim/train_data.pkl
+    - data/interim/val_data.pkl
+    - src/features/build_features.py
+    - src/features/features.py
+    outs:
+    - data/processed/train_data.pkl
+    - data/processed/val_data.pkl
+
+  train_model:
+    cmd: python src/models/train_model.py data/processed/train_data.pkl data/interim/train_target.pkl models/catboost.pkl models/HGBR.pkl
+    deps:
+    - data/interim/train_target.pkl
+    - data/processed/train_data.pkl
+    - src/models/train_model.py
+    - src/models/train.py
+    outs:
+    - models/catboost.pkl
+    - models/HGBR.pkl
+
+  predict_val_model:
+    cmd: python src/models/predict_model.py data/processed/val_data.pkl models/catboost.pkl models/HGBR.pkl predictions/catboost_val_predict.pkl predictions/HGBR_val_predict.pkl
+    deps:
+    - data/processed/val_data.pkl
+    - models/catboost.pkl
+    - models/HGBR.pkl
+    - src/models/predict_model.py
+    outs:
+    - predictions/catboost_val_predict.pkl
+    - predictions/HGBR_val_predict.pkl
+
+  preprocess_test_data:
+    cmd: python src/data/make_dataset.py data/raw/test.csv --output_data_filepath
+      data/interim/test.pkl
+    deps:
+    - data/raw/test.csv
+    - src/data/make_dataset.py
+    - src/data/preprocess.py
+    outs:
+    - data/interim/test.pkl
+
+  test_feature_generation:
+    cmd: python src/features/build_features.py data/interim/test.pkl data/processed/test.pkl
+    deps:
+    - data/interim/test.pkl
+    - src/features/build_features.py
+    - src/features/features.py
+    outs:
+    - data/processed/test.pkl
+
+  evaluate:
+    cmd: python src/models/evaluate.py predictions/catboost_val_predict.pkl predictions/HGBR_val_predict.pkl data/interim/val_target.pkl reports/evaluate/catboost_metrics.json reports/evaluate/HGBR_metrics.json
+    deps:
+    - data/interim/val_target.pkl
+    - predictions/catboost_val_predict.pkl
+    - predictions/HGBR_val_predict.pkl
+    - src/models/evaluate.py
+    metrics:
+    - reports/evaluate/catboost_metrics.json
+    - reports/evaluate/HGBR_metrics.json
+  
+  predict_test_model:
+    cmd: python src/models/predict_model.py data/processed/test.pkl models/catboost.pkl models/HGBR.pkl predictions/catboost_test_predict.pkl predictions/HGBR_test_predict.pkl
+    deps:
+    - data/processed/test.pkl
+    - models/catboost.pkl
+    - models/HGBR.pkl
+    - src/models/predict_model.py
+    outs:
+    - predictions/catboost_test_predict.pkl
+    - predictions/HGBR_test_predict.pkl
